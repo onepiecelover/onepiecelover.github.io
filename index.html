@@ -212,73 +212,6 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2021/06/04/%E5%AE%B9%E5%99%A8%E9%95%9C%E5%83%8F%E5%A6%82%E4%BD%95%E4%BF%AE%E6%94%B9%E6%97%B6%E5%8C%BA/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Angle">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="嘻嘻的梦想">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2021/06/04/%E5%AE%B9%E5%99%A8%E9%95%9C%E5%83%8F%E5%A6%82%E4%BD%95%E4%BF%AE%E6%94%B9%E6%97%B6%E5%8C%BA/" class="post-title-link" itemprop="url">容器镜像如何修改时区</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2021-06-04 17:05:25 / 修改时间：17:16:54" itemprop="dateCreated datePublished" datetime="2021-06-04T17:05:25+08:00">2021-06-04</time>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h3 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h3><blockquote>
-<p>在Kubernetes集群中运行的容器默认会使用UTC时间，即pod内0点时刻，北京时间为上午8点。所以对于一些有时区要求的场景就变得非常不方便。</p>
-</blockquote>
-<h3 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h3><blockquote>
-<p>我们可以修改容器镜像的时区来规避因为时区不一致带来的问题</p>
-</blockquote>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">FROM ubuntu:18.04</span><br><span class="line">RUN apt-get install tzdata -y</span><br><span class="line">RUN rm -f /etc/localtime \</span><br><span class="line">&amp;&amp; ln -sv /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \</span><br><span class="line">&amp;&amp; <span class="built_in">echo</span> <span class="string">&quot;Asia/Shanghai&quot;</span> &gt; /etc/timezone</span><br></pre></td></tr></table></figure>
-
-<p><img src="/images/202106/utc-time.jpg" alt="utc时间"><br><img src="/images/202106/beijing-time.jpg" alt="北京时间"></p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="http://example.com/2021/06/04/hello-world/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -500,12 +433,12 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">4</span>
+          <span class="site-state-item-count">3</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-tags">
-        <span class="site-state-item-count">2</span>
+        <span class="site-state-item-count">1</span>
         <span class="site-state-item-name">标签</span>
       </div>
   </nav>
