@@ -20,28 +20,37 @@
     var CONFIG = {"hostname":"example.com","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
   </script>
 
-  <meta property="og:type" content="website">
-<meta property="og:title" content="嘻嘻的梦想">
-<meta property="og:url" content="http://example.com/index.html">
+  <meta name="description" content="背景介绍 在以往的prometheus方案中，prometheus基本都是单例部署，如果以多副本的方式部署又会带来数据重复的问题，而且prometheus的数据都是本地磁盘存储，本地磁盘容量总归有上限，如果prometheus的数据量特别大，那么能查询到的监控数据的时间必定很短，在这样的背景下我们不得不寻找更优的解决方案。而thanos的出现解决了上述问题。  thanos介绍 官方的介绍：Ope">
+<meta property="og:type" content="article">
+<meta property="og:title" content="prometheus+thanos实践">
+<meta property="og:url" content="http://example.com/2021/06/11/prometheus-thanos%E5%AE%9E%E8%B7%B5/index.html">
 <meta property="og:site_name" content="嘻嘻的梦想">
+<meta property="og:description" content="背景介绍 在以往的prometheus方案中，prometheus基本都是单例部署，如果以多副本的方式部署又会带来数据重复的问题，而且prometheus的数据都是本地磁盘存储，本地磁盘容量总归有上限，如果prometheus的数据量特别大，那么能查询到的监控数据的时间必定很短，在这样的背景下我们不得不寻找更优的解决方案。而thanos的出现解决了上述问题。  thanos介绍 官方的介绍：Ope">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/2021/06/11/prometheus-thanos%E5%AE%9E%E8%B7%B5/prometheus-sts.png">
+<meta property="og:image" content="http://example.com/2021/06/11/prometheus-thanos%E5%AE%9E%E8%B7%B5/thanos-dup.png">
+<meta property="og:image" content="http://example.com/2021/06/11/prometheus-thanos%E5%AE%9E%E8%B7%B5/thanos-dedup.png">
+<meta property="article:published_time" content="2021-06-11T10:07:54.000Z">
+<meta property="article:modified_time" content="2021-06-12T04:54:35.208Z">
 <meta property="article:author" content="Angle">
+<meta property="article:tag" content="k8s,prometheus,thanos,S3">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/2021/06/11/prometheus-thanos%E5%AE%9E%E8%B7%B5/prometheus-sts.png">
 
-<link rel="canonical" href="http://example.com/">
+<link rel="canonical" href="http://example.com/2021/06/11/prometheus-thanos%E5%AE%9E%E8%B7%B5/">
 
 
 <script id="page-configurations">
   // https://hexo.io/docs/variables.html
   CONFIG.page = {
     sidebar: "",
-    isHome : true,
-    isPost : false,
+    isHome : false,
+    isPost : true,
     lang   : 'zh-CN'
   };
 </script>
 
-  <title>嘻嘻的梦想</title>
+  <title>prometheus+thanos实践 | 嘻嘻的梦想</title>
   
 
 
@@ -139,101 +148,10 @@
         <div class="content-wrap">
           
 
-          <div class="content index posts-expand">
+          <div class="content post posts-expand">
             
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2021/06/11/k8s%E9%9B%86%E7%BE%A4%E9%83%A8%E7%BD%B2prometheus%E6%9C%8D%E5%8A%A1/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Angle">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="嘻嘻的梦想">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2021/06/11/k8s%E9%9B%86%E7%BE%A4%E9%83%A8%E7%BD%B2prometheus%E6%9C%8D%E5%8A%A1/" class="post-title-link" itemprop="url">k8s集群部署prometheus服务</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2021-06-11 22:35:24" itemprop="dateCreated datePublished" datetime="2021-06-11T22:35:24+08:00">2021-06-11</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-06-12 00:02:26" itemprop="dateModified" datetime="2021-06-12T00:02:26+08:00">2021-06-12</time>
-              </span>
-
-          
-
-        </div>
-      </header>
 
     
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h3 id="prometheus介绍"><a href="#prometheus介绍" class="headerlink" title="prometheus介绍"></a>prometheus介绍</h3><blockquote>
-<p>Prometheus 是一个开源系统监控和警报工具包，最初构建于 SoundCloud。Prometheus 是Kubernetes之后成为第二个正式加入CNCF基金会的项目。</p>
-</blockquote>
-<h3 id="部署"><a href="#部署" class="headerlink" title="部署"></a>部署</h3><h4 id="prometheus-ns-yaml"><a href="#prometheus-ns-yaml" class="headerlink" title="prometheus-ns.yaml"></a>prometheus-ns.yaml</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: v1</span><br><span class="line">kind: Namespace</span><br><span class="line">metadata:</span><br><span class="line">  name: kube-mon</span><br></pre></td></tr></table></figure>
-
-<h4 id="prometheus-rbac-yaml"><a href="#prometheus-rbac-yaml" class="headerlink" title="prometheus-rbac.yaml"></a>prometheus-rbac.yaml</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: v1</span><br><span class="line">kind: ServiceAccount</span><br><span class="line">metadata:</span><br><span class="line">  name: prometheus</span><br><span class="line">  namespace: kube-mon</span><br><span class="line">---</span><br><span class="line">apiVersion: rbac.authorization.k8s.io/v1</span><br><span class="line">kind: ClusterRole</span><br><span class="line">metadata:</span><br><span class="line">  name: prometheus</span><br><span class="line">rules:</span><br><span class="line">- apiGroups:</span><br><span class="line">  - <span class="string">&quot;&quot;</span></span><br><span class="line">  resources:</span><br><span class="line">  - nodes</span><br><span class="line">  - services</span><br><span class="line">  - endpoints</span><br><span class="line">  - pods</span><br><span class="line">  - nodes/proxy</span><br><span class="line">  verbs:</span><br><span class="line">  - get</span><br><span class="line">  - list</span><br><span class="line">  - watch</span><br><span class="line">- apiGroups:</span><br><span class="line">  - <span class="string">&quot;extensions&quot;</span></span><br><span class="line">  resources:</span><br><span class="line">    - ingresses</span><br><span class="line">  verbs:</span><br><span class="line">  - get</span><br><span class="line">  - list</span><br><span class="line">  - watch</span><br><span class="line">- apiGroups:</span><br><span class="line">  - <span class="string">&quot;&quot;</span></span><br><span class="line">  resources:</span><br><span class="line">  - configmaps</span><br><span class="line">  - nodes/metrics</span><br><span class="line">  verbs:</span><br><span class="line">  - get</span><br><span class="line">- nonResourceURLs:</span><br><span class="line">  - /metrics</span><br><span class="line">  verbs:</span><br><span class="line">  - get</span><br><span class="line">---</span><br><span class="line">apiVersion: rbac.authorization.k8s.io/v1</span><br><span class="line">kind: ClusterRoleBinding</span><br><span class="line">metadata:</span><br><span class="line">  name: prometheus</span><br><span class="line">roleRef:</span><br><span class="line">  apiGroup: rbac.authorization.k8s.io</span><br><span class="line">  kind: ClusterRole</span><br><span class="line">  name: prometheus</span><br><span class="line">subjects:</span><br><span class="line">- kind: ServiceAccount</span><br><span class="line">  name: prometheus</span><br><span class="line">  namespace: kube-mon</span><br></pre></td></tr></table></figure>
-
-<h4 id="prometheus-cm-yaml"><a href="#prometheus-cm-yaml" class="headerlink" title="prometheus-cm.yaml"></a>prometheus-cm.yaml</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: v1</span><br><span class="line">kind: ConfigMap</span><br><span class="line">metadata:</span><br><span class="line">  name: prometheus-config</span><br><span class="line">  namespace: kube-mon</span><br><span class="line">data:</span><br><span class="line">  prometheus.yml: |</span><br><span class="line">    global:</span><br><span class="line">      scrape_interval: 15s</span><br><span class="line">      scrape_timeout: 15s</span><br><span class="line">    scrape_configs:</span><br><span class="line">    - job_name: <span class="string">&#x27;prometheus&#x27;</span></span><br><span class="line">      static_configs:</span><br><span class="line">      - targets: [<span class="string">&#x27;localhost:9090&#x27;</span>]</span><br></pre></td></tr></table></figure>
-
-<h4 id="prometheus-deploy-yaml"><a href="#prometheus-deploy-yaml" class="headerlink" title="prometheus-deploy.yaml"></a>prometheus-deploy.yaml</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: apps/v1</span><br><span class="line">kind: Deployment</span><br><span class="line">metadata:</span><br><span class="line">  name: prometheus</span><br><span class="line">  namespace: kube-mon</span><br><span class="line">  labels:</span><br><span class="line">    app: prometheus</span><br><span class="line">spec:</span><br><span class="line">  selector:</span><br><span class="line">    matchLabels:</span><br><span class="line">      app: prometheus</span><br><span class="line">  template:</span><br><span class="line">    metadata:</span><br><span class="line">      labels:</span><br><span class="line">        app: prometheus</span><br><span class="line">    spec:</span><br><span class="line">      serviceAccountName: prometheus</span><br><span class="line">      securityContext:</span><br><span class="line">        runAsUser: 0</span><br><span class="line">      containers:</span><br><span class="line">      - image: prom/prometheus:v2.14.0</span><br><span class="line">        name: prometheus</span><br><span class="line">        args:</span><br><span class="line">        - <span class="string">&quot;--config.file=/etc/prometheus/prometheus.yml&quot;</span></span><br><span class="line">        - <span class="string">&quot;--storage.tsdb.path=/prometheus&quot;</span>  <span class="comment"># 指定tsdb数据路径</span></span><br><span class="line">        - <span class="string">&quot;--storage.tsdb.retention.time=24h&quot;</span></span><br><span class="line">        - <span class="string">&quot;--web.enable-admin-api&quot;</span>  <span class="comment"># 控制对admin HTTP API的访问，其中包括删除时间序列等功能</span></span><br><span class="line">        - <span class="string">&quot;--web.enable-lifecycle&quot;</span>  <span class="comment"># 支持热更新，直接执行localhost:9090/-/reload立即生效</span></span><br><span class="line">        - <span class="string">&quot;--web.console.libraries=/usr/share/prometheus/console_libraries&quot;</span></span><br><span class="line">        - <span class="string">&quot;--web.console.templates=/usr/share/prometheus/consoles&quot;</span></span><br><span class="line">        ports:</span><br><span class="line">        - containerPort: 9090</span><br><span class="line">          name: http</span><br><span class="line">        volumeMounts:</span><br><span class="line">        - mountPath: <span class="string">&quot;/etc/prometheus&quot;</span></span><br><span class="line">          name: config-volume</span><br><span class="line">        - mountPath: <span class="string">&quot;/prometheus&quot;</span></span><br><span class="line">          name: data</span><br><span class="line">        resources:</span><br><span class="line">          requests:</span><br><span class="line">            cpu: 100m</span><br><span class="line">            memory: 512Mi</span><br><span class="line">          limits:</span><br><span class="line">            cpu: 100m</span><br><span class="line">            memory: 512Mi</span><br><span class="line">      volumes:</span><br><span class="line">      - name: data</span><br><span class="line">        hostPath:</span><br><span class="line">          path: /data/prometheus/</span><br><span class="line">      - configMap:</span><br><span class="line">          name: prometheus-config</span><br><span class="line">        name: config-volume</span><br></pre></td></tr></table></figure>
-<blockquote>
-<p>部署之后发现报错</p>
-</blockquote>
-<img src="/2021/06/11/k8s%E9%9B%86%E7%BE%A4%E9%83%A8%E7%BD%B2prometheus%E6%9C%8D%E5%8A%A1/deploy-error.png" class="" title="部署报错">
-
-<blockquote>
-<p>这样的错误信息，这是因为我们的 prometheus 的镜像中是使用的 nobody 这个用户，然后现在我们通过 hostPath 挂载到宿主机上面的目录的 ownership 却是 root</p>
-</blockquote>
-<h5 id="解决办法（一）"><a href="#解决办法（一）" class="headerlink" title="解决办法（一）"></a>解决办法（一）</h5><blockquote>
-<p>这个时候我们就可以通过 securityContext 来为 Pod 设置下 volumes 的权限，通过设置 runAsUser=0 指定运行的用户为 root</p>
-</blockquote>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">...</span><br><span class="line">securityContext:</span><br><span class="line">  runAsUser: 0</span><br></pre></td></tr></table></figure>
-
-<h4 id="prometheus-svc-yaml"><a href="#prometheus-svc-yaml" class="headerlink" title="prometheus-svc.yaml"></a>prometheus-svc.yaml</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">apiVersion: v1</span><br><span class="line">kind: Service</span><br><span class="line">metadata:</span><br><span class="line">  name: prometheus</span><br><span class="line">  namespace: kube-mon</span><br><span class="line">  labels:</span><br><span class="line">    app: prometheus</span><br><span class="line">spec:</span><br><span class="line">  selector:</span><br><span class="line">    app: prometheus</span><br><span class="line">  <span class="built_in">type</span>: LoadBalancer <span class="comment">#也可以使用NodePort通过节点IP直接访问</span></span><br><span class="line">  ports:</span><br><span class="line">    - name: web</span><br><span class="line">      port: 9090</span><br><span class="line">      targetPort: http</span><br></pre></td></tr></table></figure>
-
-<blockquote>
-<p>参考<a target="_blank" rel="noopener" href="https://www.qikqiak.com/k8strain/monitor/prometheus/">Prometheus部署</a></p>
-</blockquote>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
@@ -249,10 +167,9 @@
       <meta itemprop="name" content="嘻嘻的梦想">
     </span>
       <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2021/06/11/prometheus-thanos%E5%AE%9E%E8%B7%B5/" class="post-title-link" itemprop="url">prometheus+thanos实践</a>
-        </h2>
+        <h1 class="post-title" itemprop="name headline">
+          prometheus+thanos实践
+        </h1>
 
         <div class="post-meta">
             <span class="post-meta-item">
@@ -282,7 +199,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="背景介绍"><a href="#背景介绍" class="headerlink" title="背景介绍"></a>背景介绍</h2><blockquote>
+        <h2 id="背景介绍"><a href="#背景介绍" class="headerlink" title="背景介绍"></a>背景介绍</h2><blockquote>
 <p>在以往的prometheus方案中，prometheus基本都是单例部署，如果以多副本的方式部署又会带来数据重复的问题，而且prometheus的数据都是本地磁盘存储，本地磁盘容量总归有上限，如果prometheus的数据量特别大，那么能查询到的监控数据的时间必定很短，在这样的背景下我们不得不寻找更优的解决方案。而thanos的出现解决了上述问题。</p>
 </blockquote>
 <h2 id="thanos介绍"><a href="#thanos介绍" class="headerlink" title="thanos介绍"></a>thanos介绍</h2><blockquote>
@@ -355,466 +272,36 @@
 <p><a target="_blank" rel="noopener" href="https://www.qikqiak.com/k8strain/monitor/thanos/">参考thanos</a></p>
 <h2 id="附录"><a href="#附录" class="headerlink" title="附录"></a>附录</h2><h4 id="node-export"><a href="#node-export" class="headerlink" title="node-export"></a>node-export</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br></pre></td><td class="code"><pre><span class="line">piVersion: apps/v1</span><br><span class="line">kind: DaemonSet</span><br><span class="line">metadata:</span><br><span class="line">  name: node-exporter</span><br><span class="line">  namespace: kube-mon</span><br><span class="line">  labels:</span><br><span class="line">    app: node-exporter</span><br><span class="line">spec:</span><br><span class="line">  selector:</span><br><span class="line">    matchLabels:</span><br><span class="line">      app: node-exporter</span><br><span class="line">  template:</span><br><span class="line">    metadata:</span><br><span class="line">      labels:</span><br><span class="line">        app: node-exporter</span><br><span class="line">    spec:</span><br><span class="line">      hostPID: <span class="literal">true</span></span><br><span class="line">      hostIPC: <span class="literal">true</span></span><br><span class="line">      hostNetwork: <span class="literal">true</span></span><br><span class="line">      nodeSelector:</span><br><span class="line">        kubernetes.io/os: linux</span><br><span class="line">      containers:</span><br><span class="line">      - name: node-exporter</span><br><span class="line">        image: prom/node-exporter:v0.18.1</span><br><span class="line">        args:</span><br><span class="line">        - --web.listen-address=$(HOSTIP):9100</span><br><span class="line">        - --path.procfs=/host/proc</span><br><span class="line">        - --path.sysfs=/host/sys</span><br><span class="line">        - --path.rootfs=/host/root</span><br><span class="line">        - --collector.filesystem.ignored-mount-points=^/(dev|proc|sys|var/lib/docker/.+)($|/)</span><br><span class="line">        - --collector.filesystem.ignored-fs-types=^(autofs|binfmt_misc|cgroup|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|mqueue|overlay|proc|procfs|pstore|rpc_pipefs|securityfs|sysfs|tracefs)$</span><br><span class="line">        ports:</span><br><span class="line">        - containerPort: 9100</span><br><span class="line">        env:</span><br><span class="line">        - name: HOSTIP</span><br><span class="line">          valueFrom:</span><br><span class="line">            fieldRef:</span><br><span class="line">              fieldPath: status.hostIP</span><br><span class="line">        resources:</span><br><span class="line">          requests:</span><br><span class="line">            cpu: 150m</span><br><span class="line">            memory: 180Mi</span><br><span class="line">          limits:</span><br><span class="line">            cpu: 150m</span><br><span class="line">            memory: 180Mi</span><br><span class="line">        securityContext:</span><br><span class="line">          runAsNonRoot: <span class="literal">true</span></span><br><span class="line">          runAsUser: 65534</span><br><span class="line">        volumeMounts:</span><br><span class="line">        - name: proc</span><br><span class="line">          mountPath: /host/proc</span><br><span class="line">        - name: sys</span><br><span class="line">          mountPath: /host/sys</span><br><span class="line">        - name: root</span><br><span class="line">          mountPath: /host/root</span><br><span class="line">          mountPropagation: HostToContainer</span><br><span class="line">          readOnly: <span class="literal">true</span></span><br><span class="line">      tolerations:</span><br><span class="line">      - operator: <span class="string">&quot;Exists&quot;</span></span><br><span class="line">      volumes:</span><br><span class="line">      - name: proc</span><br><span class="line">        hostPath:</span><br><span class="line">          path: /proc</span><br><span class="line">      - name: dev</span><br><span class="line">        hostPath:</span><br><span class="line">          path: /dev</span><br><span class="line">      - name: sys</span><br><span class="line">        hostPath:</span><br><span class="line">          path: /sys</span><br><span class="line">      - name: root</span><br><span class="line">        hostPath:</span><br><span class="line">          path: /</span><br></pre></td></tr></table></figure>
 
-      
     </div>
 
     
     
     
+
       <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
+          <div class="post-tags">
+              <a href="/tags/k8s-prometheus-thanos-S3/" rel="tag"># k8s,prometheus,thanos,S3</a>
+          </div>
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2021/06/04/%E5%AE%89%E8%A3%85docker/">
+        
 
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Angle">
-      <meta itemprop="description" content="">
-    </span>
 
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="嘻嘻的梦想">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2021/06/04/%E5%AE%89%E8%A3%85docker/" class="post-title-link" itemprop="url">安装docker</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2021-06-04 18:51:25 / 修改时间：20:12:10" itemprop="dateCreated datePublished" datetime="2021-06-04T18:51:25+08:00">2021-06-04</time>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h3 id="ubuntu环境"><a href="#ubuntu环境" class="headerlink" title="ubuntu环境"></a>ubuntu环境</h3><h4 id="最新版本"><a href="#最新版本" class="headerlink" title="最新版本"></a>最新版本</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-get remove docker docker-engine docker.io containerd runc</span><br><span class="line"></span><br><span class="line">sudo apt-get update</span><br><span class="line"></span><br><span class="line">//</span><br><span class="line">sudo apt-get install \</span><br><span class="line">    apt-transport-https \</span><br><span class="line">    ca-certificates \</span><br><span class="line">    curl \</span><br><span class="line">    gnupg-agent \</span><br><span class="line">    software-properties-common</span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">//Add Docker’s official GPG key</span><br><span class="line">curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -</span><br><span class="line"></span><br><span class="line">//Verify that you now have the key with the fingerprint</span><br><span class="line">apt-key fingerprint 0EBFCD88</span><br><span class="line"></span><br><span class="line">//amd64</span><br><span class="line">sudo add-apt-repository \</span><br><span class="line">   <span class="string">&quot;deb [arch=amd64] https://download.docker.com/linux/ubuntu \</span></span><br><span class="line"><span class="string">   <span class="subst">$(lsb_release -cs)</span> \</span></span><br><span class="line"><span class="string">   stable&quot;</span></span><br><span class="line">   </span><br><span class="line">sudo apt-get update</span><br><span class="line"></span><br><span class="line">sudo apt-get install docker-ce docker-ce-cli containerd.io</span><br></pre></td></tr></table></figure>
-
-<h4 id="指定版本"><a href="#指定版本" class="headerlink" title="指定版本"></a>指定版本</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">//List the versions available <span class="keyword">in</span> your repo</span><br><span class="line">apt-cache madison docker-ce</span><br><span class="line"></span><br><span class="line">//Install a specific version</span><br><span class="line">sudo apt-get install docker-ce=&lt;VERSION_STRING&gt; docker-ce-cli=&lt;VERSION_STRING&gt; containerd.io</span><br></pre></td></tr></table></figure>
-
-<h3 id="centos环境"><a href="#centos环境" class="headerlink" title="centos环境"></a>centos环境</h3><h4 id="rpm包安装——方式一"><a href="#rpm包安装——方式一" class="headerlink" title="rpm包安装——方式一"></a>rpm包安装——方式一</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 下载docker-ce包</span></span><br><span class="line">wget https://download.docker.com/linux/centos/7/x86_64/stable/Packages/docker-ce-18.09.2-3.el7.x86_64.rpm</span><br><span class="line"></span><br><span class="line"><span class="comment"># docker-ce-cli包</span></span><br><span class="line">wget https://download.docker.com/linux/centos/7/x86_64/stable/Packages/docker-ce-cli-18.09.2-3.el7.x86_64.rpm</span><br><span class="line"></span><br><span class="line"><span class="comment"># containerd.io包</span></span><br><span class="line">wget https://download.docker.com/linux/centos/7/x86_64/stable/Packages/containerd.io-1.2.2-3.3.el7.x86_64.rpm</span><br><span class="line"></span><br><span class="line"><span class="comment">### 安装rpm包（注意顺序）</span></span><br><span class="line">yum install docker-ce-cli-18.09.2-3.el7.x86_64.rpm</span><br><span class="line"></span><br><span class="line">yum install containerd.io-1.2.2-3.3.el7.x86_64.rpm</span><br><span class="line">yum install docker-ce-18.09.2-3.el7.x86_64.rpm</span><br></pre></td></tr></table></figure>
-
-<p><a target="_blank" rel="noopener" href="https://docs.docker.com/install/linux/docker-ce/centos/">【参考】https://docs.docker.com/install/linux/docker-ce/centos/</a><br><a target="_blank" rel="noopener" href="https://download.docker.com/linux/centos/7/x86_64/stable/Packages/">【rpm包地址】https://download.docker.com/linux/centos/7/x86_64/stable/Packages/</a></p>
-<h4 id="rpm包安装——方式二"><a href="#rpm包安装——方式二" class="headerlink" title="rpm包安装——方式二"></a>rpm包安装——方式二</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">wget https://download.docker.com/linux/centos/7/x86_64/stable/Packages/xxx.rpm</span><br><span class="line"></span><br><span class="line">sudo yum install /path/to/package.rpm</span><br><span class="line">sudo systemctl start docker</span><br></pre></td></tr></table></figure>
-
-<h5 id="卸载docker"><a href="#卸载docker" class="headerlink" title="卸载docker"></a>卸载docker</h5><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sudo yum remove docker-ce</span><br><span class="line">sudo rm -rf /var/lib/docker</span><br></pre></td></tr></table></figure>
-
-<h4 id="yum安装"><a href="#yum安装" class="headerlink" title="yum安装"></a>yum安装</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">sudo yum install -y yum-utils</span><br><span class="line">sudo yum-config-manager   --add-repo https://download.docker.com/linux/centos/docker-ce.repo</span><br><span class="line"></span><br><span class="line">sudo yum makecache fast</span><br><span class="line">sudo yum install docker-ce</span><br><span class="line">sudo systemctl start docker</span><br></pre></td></tr></table></figure>
-<p><a target="_blank" rel="noopener" href="https://docs.docker.com/engine/installation/linux/centos/#install-using-the-repository">【参考】https://docs.docker.com/engine/installation/linux/centos/#install-using-the-repository</a></p>
-
-      
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/06/04/%E5%AE%89%E8%A3%85docker/" rel="prev" title="安装docker">
+      <i class="fa fa-chevron-left"></i> 安装docker
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/06/11/k8s%E9%9B%86%E7%BE%A4%E9%83%A8%E7%BD%B2prometheus%E6%9C%8D%E5%8A%A1/" rel="next" title="k8s集群部署prometheus服务">
+      k8s集群部署prometheus服务 <i class="fa fa-chevron-right"></i>
+    </a></div>
     </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
       </footer>
+    
   </article>
   
   
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2021/06/04/Dockerfile-%E6%8C%87%E4%BB%A4%E8%AF%A6%E8%A7%A3/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Angle">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="嘻嘻的梦想">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2021/06/04/Dockerfile-%E6%8C%87%E4%BB%A4%E8%AF%A6%E8%A7%A3/" class="post-title-link" itemprop="url">Dockerfile 指令详解</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2021-06-04 17:50:03 / 修改时间：17:55:36" itemprop="dateCreated datePublished" datetime="2021-06-04T17:50:03+08:00">2021-06-04</time>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h3 id="COPY-复制文件"><a href="#COPY-复制文件" class="headerlink" title="COPY 复制文件"></a>COPY 复制文件</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">COPY &lt;源路径&gt;... &lt;目标路径&gt;</span><br><span class="line">COPY [<span class="string">&quot;&lt;源路径1&gt;&quot;</span>,... <span class="string">&quot;&lt;目标路径&gt;&quot;</span>]</span><br></pre></td></tr></table></figure>
-<blockquote>
-<ul>
-<li>和 RUN 指令一样，也有两种格式，一种类似于命令行，一种类似于函数调用。<br>COPY 指令将从构建上下文目录中 &lt;源路径&gt; 的文件/目录复制到新的一层的镜像内的 &lt;目标路径&gt; 位置。比如：<br>COPY package.json /usr/src/app/</li>
-</ul>
-</blockquote>
-<blockquote>
-<ul>
-<li>&lt;源路径&gt; 可以是多个，甚至可以是通配符，其通配符规则要满足 Go 的 filepath.Match 规则，如：<br>COPY hom* /mydir/<br>COPY hom?.txt /mydir/</li>
-</ul>
-</blockquote>
-<blockquote>
-<ul>
-<li>&lt;目标路径&gt; 可以是容器内的绝对路径，也可以是相对于工作目录的相对路径（工作目录可以用 WORKDIR指令来指定）。目标路径不需要事先创建，如果目录不存在会在复制文件前先行创建缺失目录。</li>
-</ul>
-</blockquote>
-<blockquote>
-<ul>
-<li>此外，还需要注意一点，使用COPY指令，源文件的各种元数据都会保留。比如读、写、执行权限、文件变更时间等。这个特性对于镜像定制很有用。特别是构建相关文件都在使用 Git 进行管理的时候.</li>
-</ul>
-</blockquote>
-<h3 id="ADD-更高级的复制文件"><a href="#ADD-更高级的复制文件" class="headerlink" title="ADD 更高级的复制文件"></a>ADD 更高级的复制文件</h3><blockquote>
-<p>ADD 指令和 COPY 的格式和性质基本一致。但是在 COPY 基础上增加了一些功能。</p>
-</blockquote>
-<h4 id="源路径可以是URL"><a href="#源路径可以是URL" class="headerlink" title="源路径可以是URL"></a>源路径可以是URL</h4><blockquote>
-<p>比如 &lt;源路径&gt; 可以是一个 URL，这种情况下，Docker 引擎会试图去下载这个链接的文件放到 &lt;目标路径&gt; 去。下载后的文件权限自动设置为 600，如果这并不是想要的权限，那么还需要增加额外的一层 RUN进行权限调整</p>
-</blockquote>
-<h4 id="源文件可以是压缩包"><a href="#源文件可以是压缩包" class="headerlink" title="源文件可以是压缩包"></a>源文件可以是压缩包</h4><blockquote>
-<p>另外，如果下载的是个压缩包，需要解压缩，也一样还需要额外的一层 RUN 指令进行解压缩。所以不如直接使用 RUN 指令，然后使用 wget 或者 curl工具下载，处理权限、解压缩、然后清理无用文件更合理。因此，这个功能其实并不实用，而且<code>不推荐使用</code>。<br>如果 &lt;源路径&gt; 为一个 tar 压缩文件的话，压缩格式为 gzip, bzip2 以及 xz 的情况下，ADD 指令将会自动解压缩这个压缩文件到 &lt;目标路径&gt; 去。<br>在某些情况下，这个自动解压缩的功能非常有用，比如官方镜像 ubuntu 中：</p>
-</blockquote>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">FROM scratch</span><br><span class="line">ADD ubuntu-xenial-core-cloudimg-amd64-root.tar.gz /</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
-
-<h4 id="COPY和ADD适用场景说明"><a href="#COPY和ADD适用场景说明" class="headerlink" title="COPY和ADD适用场景说明"></a>COPY和ADD适用场景说明</h4><blockquote>
-<ul>
-<li>在 Docker 官方的最佳实践文档中要求，尽可能的使用 COPY，因为 COPY 的语义很明确，就是复制文件而已，而 ADD 则包含了更复杂的功能，其行为也不一定很清晰。最适合使用 ADD 的场合，就是所提及的需要自动解压缩的场合。</li>
-<li>另外需要注意的是，ADD 指令会令镜像构建缓存失效，从而可能会令镜像构建变得比较缓慢。<br>因此在 COPY 和 ADD 指令中选择的时候，可以遵循这样的原则，所有的文件复制均使用 COPY 指令，仅在需要自动解压缩的场合使用 ADD。</li>
-</ul>
-</blockquote>
-<h3 id="CMD-容器启动命令"><a href="#CMD-容器启动命令" class="headerlink" title="CMD 容器启动命令"></a>CMD 容器启动命令</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">shell 格式：CMD &lt;命令&gt;</span><br><span class="line"><span class="built_in">exec</span> 格式：CMD [<span class="string">&quot;可执行文件&quot;</span>, <span class="string">&quot;参数1&quot;</span>, <span class="string">&quot;参数2&quot;</span>...]</span><br><span class="line">参数列表格式：CMD [<span class="string">&quot;参数1&quot;</span>, <span class="string">&quot;参数2&quot;</span>...]。在指定了 ENTRYPOINT 指令后，用 CMD 指定具体的参数。</span><br></pre></td></tr></table></figure>
-
-<blockquote>
-<ul>
-<li>Docker 不是虚拟机，容器就是进程。既然是进程，那么在启动容器的时候，需要指定所运行的程序及参数。CMD 指令就是用于指定默认的容器主进程的启动命令的。</li>
-<li>在运行时可以指定新的命令来替代镜像设置中的这个默认命令，比如，ubuntu 镜像默认的 CMD 是<code>/bin/bash</code>，如果我们直接 <code>docker run -it ubuntu</code> 的话，会直接进入bash。我们也可以在运行时指定运行别的命令，如 <code>docker run -it ubuntu cat /etc/os-release</code>。这就是用 <code>cat /etc/os-release</code> 命令替换了默认的 <code>/bin/bash</code> 命令了，输出了系统版本信息。</li>
-<li>在指令格式上，一般推荐使用 <code>exec</code> 格式，这类格式在解析时会被解析为 JSON 数组，因此一定要使用双引号 “，而不要使用单引号。</li>
-<li>如果使用 shell 格式的话，实际的命令会被包装为 sh -c 的参数的形式进行执行。比如：<code>CMD echo $HOME</code>在实际执行中，会将其变更为：<code>CMD [ &quot;sh&quot;, &quot;-c&quot;, &quot;echo $HOME&quot; ]</code></li>
-<li>这就是为什么我们可以使用环境变量的原因，因为这些环境变量会被 shell 进行解析处理。<br>提到 CMD 就不得不提容器中应用在前台执行和后台执行的问题。这是初学者常出现的一个混淆。</li>
-<li>Docker 不是虚拟机，容器中的应用都应该以前台执行，而不是像虚拟机、物理机里面那样，用 upstart/systemd 去启动后台服务，容器内没有后台服务的概念。一些初学者将 CMD 写为：<code>CMD service nginx start</code></li>
-<li>然后发现容器执行后就立即退出了。甚至在容器内去使用systemctl命令结果却发现根本执行不了。这就是因为没有搞明白前台、后台的概念，没有区分容器和虚拟机的差异，依旧在以传统虚拟机的角度去理解容器。</li>
-<li>对于容器而言，其启动程序就是容器应用进程，容器就是为了主进程而存在的，主进程退出，容器就失去了存在的意义，从而退出，其它辅助进程不是它需要关心的东西。</li>
-<li>而使用 service nginx start 命令，则是希望 upstart 来以后台守护进程形式启动 nginx 服务。而刚才说了 CMD service nginx start 会被理解为 CMD [ “sh”, “-c”, “service nginx start”]，因此主进程实际上是 sh。那么当 service nginx start 命令结束后，sh 也就结束了，sh 作为主进程退出了，自然就会令容器退出。</li>
-<li>正确的做法是直接执行 nginx 可执行文件，并且要求以前台形式运行。比如：CMD [“nginx”, “-g”, “daemon off;”]</li>
-</ul>
-</blockquote>
-<h4 id="ENTRYPOINT-入口点"><a href="#ENTRYPOINT-入口点" class="headerlink" title="ENTRYPOINT 入口点"></a>ENTRYPOINT 入口点</h4><blockquote>
-<p>让镜像变成像命令一样使用;应用运行前的准备工作</p>
-</blockquote>
-<h3 id="ENV-设置环境变量"><a href="#ENV-设置环境变量" class="headerlink" title="ENV 设置环境变量"></a>ENV 设置环境变量</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ENV &lt;key&gt; &lt;value&gt;</span><br><span class="line">ENV &lt;key1&gt;=&lt;value1&gt; &lt;key2&gt;=&lt;value2&gt;...</span><br></pre></td></tr></table></figure>
-
-<blockquote>
-<p>这个指令很简单，就是设置环境变量而已，无论是后面的其它指令，如RUN，还是运行时的应用，都可以直接使用这里定义的环境变量。</p>
-</blockquote>
-<h3 id="ARG-构建参数"><a href="#ARG-构建参数" class="headerlink" title="ARG 构建参数"></a>ARG 构建参数</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ARG &lt;参数名&gt;[=&lt;默认值&gt;]</span><br></pre></td></tr></table></figure>
-
-<blockquote>
-<p>构建参数和 ENV 的效果一样，都是设置环境变量。所不同的是，ARG所设置的构建环境的环境变量，在将来容器运行时是不会存在这些环境变量的。但是不要因此就使用 ARG 保存密码之类的信息，因为 docker history 还是可以看到所有值的。</p>
-</blockquote>
-<h3 id="VOLUME-定义匿名卷"><a href="#VOLUME-定义匿名卷" class="headerlink" title="VOLUME 定义匿名卷"></a>VOLUME 定义匿名卷</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">VOLUME [<span class="string">&quot;&lt;路径1&gt;&quot;</span>, <span class="string">&quot;&lt;路径2&gt;&quot;</span>...]</span><br><span class="line">VOLUME &lt;路径&gt;</span><br></pre></td></tr></table></figure>
-
-<h3 id="EXPOSE-声明端口"><a href="#EXPOSE-声明端口" class="headerlink" title="EXPOSE 声明端口"></a>EXPOSE 声明端口</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">EXPOSE &lt;端口1&gt; [&lt;端口2&gt;...]。</span><br></pre></td></tr></table></figure>
-
-<blockquote>
-<p>EXPOSE 指令是声明运行时容器提供服务端口，这只是一个声明，在运行时并不会因为这个声明应用就会开启这个端口的服务。</p>
-</blockquote>
-<h3 id="WORKDIR-指定工作目录"><a href="#WORKDIR-指定工作目录" class="headerlink" title="WORKDIR 指定工作目录"></a>WORKDIR 指定工作目录</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">WORKDIR &lt;工作目录路径&gt;。</span><br></pre></td></tr></table></figure>
-
-<blockquote>
-<p>使用 WORKDIR 指令可以来指定工作目录（或者称为当前目录），以后各层的当前目录就被改为指定的目录，如该目录不存在，WORKDIR 会帮你建立目录。</p>
-</blockquote>
-<h3 id="USER-指定当前用户"><a href="#USER-指定当前用户" class="headerlink" title="USER 指定当前用户"></a>USER 指定当前用户</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">USER &lt;用户名&gt;</span><br></pre></td></tr></table></figure>
-
-<blockquote>
-<p>USER 指令和 WORKDIR 相似，都是改变环境状态并影响以后的层。WORKDIR是改变工作目录，USER则是改变之后层的执行 RUN, CMD 以及 ENTRYPOINT 这类命令的身份。</p>
-</blockquote>
-<h3 id="HEALTHCHECK-健康检查"><a href="#HEALTHCHECK-健康检查" class="headerlink" title="HEALTHCHECK 健康检查"></a>HEALTHCHECK 健康检查</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">HEALTHCHECK [选项] CMD &lt;命令&gt;：设置检查容器健康状况的命令</span><br><span class="line">HEALTHCHECK NONE：如果基础镜像有健康检查指令，使用这行可以屏蔽掉其健康检查指令</span><br></pre></td></tr></table></figure>
-
-<h3 id="ONBUILD-为他人做嫁衣裳"><a href="#ONBUILD-为他人做嫁衣裳" class="headerlink" title="ONBUILD 为他人做嫁衣裳"></a>ONBUILD 为他人做嫁衣裳</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ONBUILD &lt;其它指令&gt;。</span><br></pre></td></tr></table></figure>
-<blockquote>
-<p>ONBUILD 是一个特殊的指令，它后面跟的是其它指令，比如 RUN, COPY等，而这些指令，在当前镜像构建时并不会被执行。只有当以当前镜像为基础镜像，去构建下一级镜像的时候才会被执行。</p>
-</blockquote>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2021/06/04/%E5%AE%B9%E5%99%A8%E9%95%9C%E5%83%8F%E4%BF%AE%E6%94%B9%E6%97%B6%E5%8C%BA/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Angle">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="嘻嘻的梦想">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2021/06/04/%E5%AE%B9%E5%99%A8%E9%95%9C%E5%83%8F%E4%BF%AE%E6%94%B9%E6%97%B6%E5%8C%BA/" class="post-title-link" itemprop="url">容器镜像修改时区</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2021-06-04 17:19:10 / 修改时间：17:21:33" itemprop="dateCreated datePublished" datetime="2021-06-04T17:19:10+08:00">2021-06-04</time>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h3 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h3><blockquote>
-<p>在Kubernetes集群中运行的容器默认会使用UTC时间，即pod内0点时刻，北京时间为上午8点。所以对于一些有时区要求的场景就变得非常不方便。</p>
-</blockquote>
-<h3 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h3><blockquote>
-<p>我们可以修改容器镜像的时区来规避因为时区不一致带来的问题</p>
-</blockquote>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">FROM ubuntu:18.04</span><br><span class="line">RUN apt-get install tzdata -y</span><br><span class="line">RUN rm -f /etc/localtime \</span><br><span class="line">&amp;&amp; ln -sv /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \</span><br><span class="line">&amp;&amp; <span class="built_in">echo</span> <span class="string">&quot;Asia/Shanghai&quot;</span> &gt; /etc/timezone</span><br></pre></td></tr></table></figure>
-
-<img src="/2021/06/04/%E5%AE%B9%E5%99%A8%E9%95%9C%E5%83%8F%E4%BF%AE%E6%94%B9%E6%97%B6%E5%8C%BA/utc-time.jpg" class="" title="utc时间">
-<img src="/2021/06/04/%E5%AE%B9%E5%99%A8%E9%95%9C%E5%83%8F%E4%BF%AE%E6%94%B9%E6%97%B6%E5%8C%BA/beijing-time.jpg" class="" title="北京时间">
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2021/06/04/hello-world/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Angle">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="嘻嘻的梦想">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2021/06/04/hello-world/" class="post-title-link" itemprop="url">Hello World</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2021-06-04 16:21:35" itemprop="dateCreated datePublished" datetime="2021-06-04T16:21:35+08:00">2021-06-04</time>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>Welcome to <a target="_blank" rel="noopener" href="https://hexo.io/">Hexo</a>! This is your very first post. Check <a target="_blank" rel="noopener" href="https://hexo.io/docs/">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a target="_blank" rel="noopener" href="https://hexo.io/docs/troubleshooting.html">troubleshooting</a> or you can ask me on <a target="_blank" rel="noopener" href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p>
-<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo new <span class="string">&quot;My New Post&quot;</span></span><br></pre></td></tr></table></figure>
-
-<p>More info: <a target="_blank" rel="noopener" href="https://hexo.io/docs/writing.html">Writing</a></p>
-<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a target="_blank" rel="noopener" href="https://hexo.io/docs/server.html">Server</a></p>
-<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a target="_blank" rel="noopener" href="https://hexo.io/docs/generating.html">Generating</a></p>
-<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a target="_blank" rel="noopener" href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2021/05/26/go-get-%E6%8A%A5%E9%94%99410-Gone/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Angle">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="嘻嘻的梦想">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2021/05/26/go-get-%E6%8A%A5%E9%94%99410-Gone/" class="post-title-link" itemprop="url">go get 报错410 Gone</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2021-05-26 11:08:48" itemprop="dateCreated datePublished" datetime="2021-05-26T11:08:48+08:00">2021-05-26</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-06-04 16:21:35" itemprop="dateModified" datetime="2021-06-04T16:21:35+08:00">2021-06-04</time>
-              </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h3 id="现象"><a href="#现象" class="headerlink" title="现象"></a>现象</h3><blockquote>
-<p>go版本<code>go1.16.3</code>使用命令<code>go get xxx@xxx</code>拉取私有库时发现会报错410Gone</p>
-</blockquote>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">go get xxx@xxx: xxx: verifying module: xxx: reading https://goproxy.io/sumdb/sum.golang.org/lookup/xxx: 410 Gone</span><br><span class="line">	server response: not found:xxx: unrecognized import path <span class="string">&quot;xxx&quot;</span>: https fetch: Get <span class="string">&quot;xxx?go-get=1&quot;</span>: dial tcp xxx.xx.xx.xx:443: connect: connection refused</span><br></pre></td></tr></table></figure>
-<blockquote>
-<p>看起来走了proxy代理。目测是<code>proxy</code>配置有问题。但是检查发现<code>GONOPROXY</code>和<code>GONOPROXY</code>配置都是OK的。</p>
-</blockquote>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">//异常环境变量</span><br><span class="line"><span class="built_in">export</span> GOPROXY=https://goproxy.cn,direct</span><br><span class="line"><span class="built_in">export</span> GONOPROXY=xxx.xxx.xxx</span><br><span class="line"><span class="built_in">export</span> GOPRIVATE=xxx.xxx.xxx</span><br></pre></td></tr></table></figure>
-<blockquote>
-<p>该配置在另外一台电脑正常工作。</p>
-</blockquote>
-<h3 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h3><blockquote>
-<p>翻了无数网友的经验贴发现是<code>GONOSUMDB</code>也需要设置。查看了工作正常的机器和新机器的设置，的确有差异。加上<code>export GONOSUMDB=xxx.xxx.xxx</code>后工作正常</p>
-</blockquote>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">//正常环境变量</span><br><span class="line"><span class="built_in">export</span> GOPROXY=https://goproxy.cn,direct</span><br><span class="line"><span class="built_in">export</span> GONOPROXY=xxx.xxx.xxx</span><br><span class="line"><span class="built_in">export</span> GOPRIVATE=xxx.xxx.xxx</span><br><span class="line"><span class="built_in">export</span> GONOSUMDB=xxx.xxx.xxx</span><br></pre></td></tr></table></figure>
-
-<h3 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h3><blockquote>
-<ul>
-<li>环境变量 <code>GOSUMDB</code> 可以用来配置你使用哪个校验服务器和公钥来做依赖包的校验.</li>
-<li>如果你的代码仓库或者模块是私有的，那么它的校验值不应该出现在互联网的公有数据库里面，但是我们本地编译的时候默认所有的依赖下载都会去尝试做校验，这样不仅会校验失败，更会泄漏一些私有仓库的路径等信息，我们可以使用<code>GONOSUMDB</code>这个环境变量来设置不做校验的代码仓库，它可以设置多个匹配路径，用逗号相隔. 举个例子<code>GONOSUMDB=*.example.com,xxx.io/private</code></li>
-</ul>
-</blockquote>
-<h3 id="proxy的环境变量说明"><a href="#proxy的环境变量说明" class="headerlink" title="proxy的环境变量说明"></a>proxy的环境变量说明</h3><ul>
-<li><a target="_blank" rel="noopener" href="https://goproxy.io/zh/docs/introduction.html">https://goproxy.io/zh/docs/introduction.html</a></li>
-</ul>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-
   
 
 
@@ -867,6 +354,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%83%8C%E6%99%AF%E4%BB%8B%E7%BB%8D"><span class="nav-number">1.</span> <span class="nav-text">背景介绍</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#thanos%E4%BB%8B%E7%BB%8D"><span class="nav-number">2.</span> <span class="nav-text">thanos介绍</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%83%A8%E7%BD%B2%E5%AE%9E%E8%B7%B5"><span class="nav-number">3.</span> <span class="nav-text">部署实践</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E7%9B%91%E6%8E%A7%E6%9C%8D%E5%8A%A1%E7%94%A8%E7%9A%84namespace"><span class="nav-number">3.1.</span> <span class="nav-text">创建监控服务用的namespace</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#prometheus%E9%83%A8%E7%BD%B2"><span class="nav-number">3.2.</span> <span class="nav-text">prometheus部署</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#prometheus-rbac"><span class="nav-number">3.2.1.</span> <span class="nav-text">prometheus-rbac</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#prometheus-config"><span class="nav-number">3.2.2.</span> <span class="nav-text">prometheus-config</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#prometheus-rules-yaml"><span class="nav-number">3.2.3.</span> <span class="nav-text">prometheus-rules.yaml</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#prometheus-sts"><span class="nav-number">3.2.4.</span> <span class="nav-text">prometheus-sts</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#prometheus-svc"><span class="nav-number">3.2.5.</span> <span class="nav-text">prometheus-svc</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#headless"><span class="nav-number">3.2.6.</span> <span class="nav-text">headless</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#thanos%E9%83%A8%E7%BD%B2"><span class="nav-number">3.3.</span> <span class="nav-text">thanos部署</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#thanos-querier-yaml"><span class="nav-number">3.3.1.</span> <span class="nav-text">thanos-querier.yaml</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#svc"><span class="nav-number">3.3.2.</span> <span class="nav-text">svc</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Store-%E7%BB%84%E4%BB%B6"><span class="nav-number">3.4.</span> <span class="nav-text">Store 组件</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#minio"><span class="nav-number">3.4.1.</span> <span class="nav-text">minio</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%83%A8%E7%BD%B2minio"><span class="nav-number">3.5.</span> <span class="nav-text">部署minio</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#mini-namespace-yaml"><span class="nav-number">3.5.1.</span> <span class="nav-text">mini-namespace.yaml</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#minio-deploy-yaml"><span class="nav-number">3.5.2.</span> <span class="nav-text">minio-deploy.yaml</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#minio-pvc-yaml"><span class="nav-number">3.5.3.</span> <span class="nav-text">minio-pvc.yaml</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#minio-svc-yaml"><span class="nav-number">3.5.4.</span> <span class="nav-text">minio-svc.yaml</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B3%E8%81%94thanos%E5%92%8Cminio"><span class="nav-number">3.6.</span> <span class="nav-text">关联thanos和minio</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#thanos-storage-minio-yaml"><span class="nav-number">3.6.1.</span> <span class="nav-text">thanos-storage-minio.yaml</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#store-yaml"><span class="nav-number">3.6.2.</span> <span class="nav-text">store.yaml</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9sidecar%E7%9A%84%E9%85%8D%E7%BD%AE"><span class="nav-number">3.6.3.</span> <span class="nav-text">修改sidecar的配置</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%99%84%E5%BD%95"><span class="nav-number">4.</span> <span class="nav-text">附录</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#node-export"><span class="nav-number">4.0.1.</span> <span class="nav-text">node-export</span></a></li></ol></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
