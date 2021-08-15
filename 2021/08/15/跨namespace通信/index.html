@@ -20,14 +20,17 @@
     var CONFIG = {"hostname":"onepiecelover.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
   </script>
 
-  <meta property="og:type" content="article">
+  <meta name="description" content="netns  对于每个 network namespace 来说，它会有自己独立的网卡、路由表、ARP 表、iptables 等和网络相关的资源   ip netns123456789101112ip netns helpUsage: ip netns list       ip netns add NAME       ip netns set NAME NETNSID       ip [-a">
+<meta property="og:type" content="article">
 <meta property="og:title" content="跨namespace通信">
 <meta property="og:url" content="https://onepiecelover.github.io/2021/08/15/%E8%B7%A8namespace%E9%80%9A%E4%BF%A1/index.html">
 <meta property="og:site_name" content="嘻嘻">
+<meta property="og:description" content="netns  对于每个 network namespace 来说，它会有自己独立的网卡、路由表、ARP 表、iptables 等和网络相关的资源   ip netns123456789101112ip netns helpUsage: ip netns list       ip netns add NAME       ip netns set NAME NETNSID       ip [-a">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2021-08-15T10:14:31.000Z">
-<meta property="article:modified_time" content="2021-08-15T10:14:31.190Z">
+<meta property="article:modified_time" content="2021-08-15T10:26:16.196Z">
 <meta property="article:author" content="Angle">
+<meta property="article:tag" content="network、linux、veth pair">
 <meta name="twitter:card" content="summary">
 
 <link rel="canonical" href="https://onepiecelover.github.io/2021/08/15/%E8%B7%A8namespace%E9%80%9A%E4%BF%A1/">
@@ -170,8 +173,9 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
+              
 
-              <time title="创建时间：2021-08-15 18:14:31" itemprop="dateCreated datePublished" datetime="2021-08-15T18:14:31+08:00">2021-08-15</time>
+              <time title="创建时间：2021-08-15 18:14:31 / 修改时间：18:26:16" itemprop="dateCreated datePublished" datetime="2021-08-15T18:14:31+08:00">2021-08-15</time>
             </span>
 
           
@@ -185,7 +189,36 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        
+        <h2 id="netns"><a href="#netns" class="headerlink" title="netns"></a>netns</h2><blockquote>
+<ul>
+<li>对于每个 <code>network namespace</code> 来说，它会有自己独立的网卡、路由表、ARP 表、iptables 等和网络相关的资源</li>
+</ul>
+</blockquote>
+<h2 id="ip-netns"><a href="#ip-netns" class="headerlink" title="ip netns"></a>ip netns</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">ip netns help</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">Usage: ip netns list</span><br><span class="line">       ip netns add NAME</span><br><span class="line">       ip netns set NAME NETNSID</span><br><span class="line">       ip [-all] netns delete [NAME]</span><br><span class="line">       ip netns identify [PID]</span><br><span class="line">       ip netns pids NAME</span><br><span class="line">       ip [-all] netns exec [NAME] cmd ...</span><br><span class="line">       ip netns monitor</span><br><span class="line">       ip netns list-id</span><br></pre></td></tr></table></figure>
+
+<h2 id="实验"><a href="#实验" class="headerlink" title="实验"></a>实验</h2><h3 id="veth-pair通信"><a href="#veth-pair通信" class="headerlink" title="veth pair通信"></a>veth pair通信</h3><h4 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">#创建ns2</span><br><span class="line">ip netns add ns2 </span><br><span class="line"></span><br><span class="line">#再次查看</span><br><span class="line">ip netns l</span><br><span class="line">ns1</span><br><span class="line">ns2</span><br><span class="line"></span><br><span class="line">#增加veth设备</span><br><span class="line">ip link add type veth </span><br><span class="line"></span><br><span class="line">#增加带名字的veth设备</span><br><span class="line">ip link add veth0 type veth peer name veth1</span><br><span class="line"></span><br><span class="line">#把这对 veth pair 分别放到已经两个 namespace</span><br><span class="line">ip link set veth0 netns ns1</span><br><span class="line">ip link set veth1 netns ns2</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">#给这对 veth pair 配置上 ip 地址，并启用它们</span><br><span class="line">ip netns exec ns1 ip link set veth0 up</span><br><span class="line">ip netns exec ns1 ip addr add 172.16.1.1/24 dev veth0</span><br><span class="line"></span><br><span class="line">ip netns exec ns2 ip link set veth1 up</span><br><span class="line">ip netns exec ns2 ip addr add 172.16.1.2/24 dev veth1</span><br></pre></td></tr></table></figure>
+
+<h4 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ip netns exec ns2 ping 172.16.1.1 -c 4</span><br></pre></td></tr></table></figure>
+
+<h4 id="验证"><a href="#验证" class="headerlink" title="验证"></a>验证</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">#直接抓包，啥也抓不到</span><br><span class="line">tcpdump host 172.16.1.1</span><br><span class="line"></span><br><span class="line">#进入ns里面抓包</span><br><span class="line">ip netns exec ns1 tcpdump host 172.16.1.1</span><br><span class="line"></span><br><span class="line">10:49:46.218008 IP 172.16.1.2 &gt; 10-9-153-165: ICMP echo request, id 10798, seq 1, length 64</span><br><span class="line">10:49:46.218024 IP 10-9-153-165 &gt; 172.16.1.2: ICMP echo reply, id 10798, seq 1, length 64</span><br><span class="line">10:49:47.250282 IP 172.16.1.2 &gt; 10-9-153-165: ICMP echo request, id 10798, seq 2, length 64</span><br><span class="line">10:49:47.250304 IP 10-9-153-165 &gt; 172.16.1.2: ICMP echo reply, id 10798, seq 2, length 64</span><br><span class="line">10:49:48.274292 IP 172.16.1.2 &gt; 10-9-153-165: ICMP echo request, id 10798, seq 3, length 64</span><br><span class="line">10:49:48.274315 IP 10-9-153-165 &gt; 172.16.1.2: ICMP echo reply, id 10798, seq 3, length 64</span><br><span class="line">10:49:49.298327 IP 172.16.1.2 &gt; 10-9-153-165: ICMP echo request, id 10798, seq 4, length 64</span><br><span class="line">10:49:49.298349 IP 10-9-153-165 &gt; 172.16.1.2: ICMP echo reply, id 10798, seq 4, length 64</span><br></pre></td></tr></table></figure>
+
+<h3 id="bridge（网桥）"><a href="#bridge（网桥）" class="headerlink" title="bridge（网桥）"></a>bridge（网桥）</h3><blockquote>
+<p><code>veth pair</code> 可以实现两个 <code>network namespace</code> 之间的通信，但是当多个 <code>namespace</code> 需要通信的时候，就无能为力了。此时就需要<code>bridge</code></p>
+</blockquote>
+<h4 id="配置网桥"><a href="#配置网桥" class="headerlink" title="配置网桥"></a>配置网桥</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"># 创建网桥</span><br><span class="line">ip link add br0 type bridge</span><br><span class="line"># 拉起网桥</span><br><span class="line">ip link set dev br0 up</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h4 id="配置net0"><a href="#配置net0" class="headerlink" title="配置net0"></a>配置net0</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"># 创建net0</span><br><span class="line">ip netns add net0</span><br><span class="line"></span><br><span class="line"># 创建veth</span><br><span class="line">ip link add type veth</span><br><span class="line"></span><br><span class="line"># veth1 移动至net0</span><br><span class="line">ip link set dev veth1 netns net0</span><br><span class="line"></span><br><span class="line"># 修改veth1的名字为eth0</span><br><span class="line">ip netns exec net0 ip link set dev veth1 name eth0</span><br><span class="line"></span><br><span class="line"># 给eth0配置ip</span><br><span class="line">ip netns exec net0 ip addr add 192.168.10.1/24 dev eth0</span><br><span class="line"># 拉起eth0</span><br><span class="line">ip netns exec net0 ip link set dev eth0 up</span><br><span class="line"></span><br><span class="line"># veth0连接到br0</span><br><span class="line">ip link set dev veth0 master br0</span><br><span class="line"># 拉起br0</span><br><span class="line">ip link set dev veth0 up</span><br></pre></td></tr></table></figure>
+
+<h4 id="配置net1-同net0"><a href="#配置net1-同net0" class="headerlink" title="配置net1(同net0)"></a>配置net1(同net0)</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">ip netns add net1</span><br><span class="line">ip link add type veth</span><br><span class="line">ip link set dev veth2 netns net1</span><br><span class="line">ip netns exec net1 ip link set dev veth2 name eth0</span><br><span class="line">ip netns exec net1 ip addr add 192.168.10.2/24 dev eth0</span><br><span class="line">ip netns exec net0 ip link set dev eth0 up</span><br><span class="line">ip link set dev veth3 master br0</span><br><span class="line">ip link set dev veth3 up</span><br></pre></td></tr></table></figure>
+
+<h4 id="测试-1"><a href="#测试-1" class="headerlink" title="测试"></a>测试</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">ip netns exec net1 ping 192.168.10.1 -c 4</span><br><span class="line"></span><br><span class="line">PING 192.168.10.1 (192.168.10.1) 56(84) bytes of data.</span><br><span class="line">64 bytes from 192.168.10.1: icmp_seq=1 ttl=64 time=0.087 ms</span><br><span class="line">64 bytes from 192.168.10.1: icmp_seq=2 ttl=64 time=0.082 ms</span><br><span class="line">^C</span><br><span class="line">--- 192.168.10.1 ping statistics ---</span><br><span class="line">2 packets transmitted, 2 received, 0% packet loss, time 1003ms</span><br><span class="line">rtt min/avg/max/mdev = 0.082/0.084/0.087/0.009 ms</span><br></pre></td></tr></table></figure>
+
+<h3 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h3><blockquote>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://cizixs.com/2017/02/10/network-virtualization-network-namespace/">Linux 网络虚拟化： network namespace 简介</a></li>
+</ul>
+</blockquote>
+
     </div>
 
     
@@ -193,6 +226,9 @@
     
 
       <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/network%E3%80%81linux%E3%80%81veth-pair/" rel="tag"># network、linux、veth pair</a>
+          </div>
 
         
 
@@ -265,6 +301,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#netns"><span class="nav-number">1.</span> <span class="nav-text">netns</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ip-netns"><span class="nav-number">2.</span> <span class="nav-text">ip netns</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C"><span class="nav-number">3.</span> <span class="nav-text">实验</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#veth-pair%E9%80%9A%E4%BF%A1"><span class="nav-number">3.1.</span> <span class="nav-text">veth pair通信</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE"><span class="nav-number">3.1.1.</span> <span class="nav-text">配置</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95"><span class="nav-number">3.1.2.</span> <span class="nav-text">测试</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%AA%8C%E8%AF%81"><span class="nav-number">3.1.3.</span> <span class="nav-text">验证</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#bridge%EF%BC%88%E7%BD%91%E6%A1%A5%EF%BC%89"><span class="nav-number">3.2.</span> <span class="nav-text">bridge（网桥）</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE%E7%BD%91%E6%A1%A5"><span class="nav-number">3.2.1.</span> <span class="nav-text">配置网桥</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%85%8D%E7%BD%AEnet0"><span class="nav-number">3.2.2.</span> <span class="nav-text">配置net0</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%85%8D%E7%BD%AEnet1-%E5%90%8Cnet0"><span class="nav-number">3.2.3.</span> <span class="nav-text">配置net1(同net0)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95-1"><span class="nav-number">3.2.4.</span> <span class="nav-text">测试</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83"><span class="nav-number">3.3.</span> <span class="nav-text">参考</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -283,7 +320,7 @@
         </a>
       </div>
       <div class="site-state-item site-state-tags">
-        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-count">7</span>
         <span class="site-state-item-name">标签</span>
       </div>
   </nav>
